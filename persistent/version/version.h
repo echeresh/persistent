@@ -4,6 +4,8 @@
 #include <list>
 #include <utility>
 #include <memory>
+#include <sstream>
+#include <ostream>
 
 namespace persistent
 {
@@ -79,6 +81,13 @@ namespace persistent
         {
             return !impl;
         }
+
+        std::string str() const
+        {
+            std::ostringstream oss;
+            oss << impl->get_label();
+            return oss.str();
+        }
     };
 
     template <class value_type>
@@ -120,3 +129,5 @@ namespace persistent
     template <class value_type>
     typename version_internal<value_type>::list_t version_internal<value_type>::default_version_list = { version_internal<value_type>(0) };
 }
+
+//std::ostream& operator<<(std::ostream& out, persistent::version v);

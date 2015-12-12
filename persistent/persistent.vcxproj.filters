@@ -42,6 +42,9 @@
     <ClCompile Include="map\map.cpp">
       <Filter>Header Files\map</Filter>
     </ClCompile>
+    <ClCompile Include="version\version.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="version\version.h">

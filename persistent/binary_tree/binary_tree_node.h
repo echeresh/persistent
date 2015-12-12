@@ -17,8 +17,7 @@ namespace persistent
             value_mod,
             back_pointer_mod,
             left_mod,
-            right_mod,
-            value_version_mod
+            right_mod
         };
 
         struct mod_box_entry
@@ -30,7 +29,8 @@ namespace persistent
             node_ptr_t left;
             node_ptr_t right;
 
-            mod_box_entry() : type(mod_type::empty_mod)
+            mod_box_entry() :
+                type(mod_type::empty_mod)
             {
             }
 
@@ -79,9 +79,9 @@ namespace persistent
         std::vector<mod_box_entry> mod_box;
 
         binary_tree_node(const key_type& key, const value_type& value,
-            std::shared_ptr<binary_tree_node> back_pointer = std::shared_ptr<binary_tree_node>(),
-            std::shared_ptr<binary_tree_node> left = std::shared_ptr<binary_tree_node>(),
-            std::shared_ptr<binary_tree_node> right = std::shared_ptr<binary_tree_node>(),
+            node_ptr_t back_pointer = node_ptr_t(),
+            node_ptr_t left = node_ptr_t(),
+            node_ptr_t right = node_ptr_t(),
             const std::vector<mod_box_entry>& mod_box = std::vector<mod_box_entry>(2 * (2 + 1 + 1))) :
             key(key),
             value(value),
@@ -273,7 +273,7 @@ namespace persistent
 
         //use SFINAE to find out whether or not value_type is persistent structure
         template <class T>
-        void set_notification(typename T::type& val, version v, version_tree_t& vtree)
+        void set_notification(typename T::persistent_type& val, version v, version_tree_t& vtree)
         {
             auto& pds = (persistent_structure<value_type>&)val;
             pds.set_parent_version(v);

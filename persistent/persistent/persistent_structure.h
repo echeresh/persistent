@@ -29,7 +29,7 @@ namespace persistent
             this->parent_version = parent_version;
         }
 
-        typedef T type;
+        typedef T persistent_type;
         virtual version get_version() const = 0;
 
         version get_parent_version() const

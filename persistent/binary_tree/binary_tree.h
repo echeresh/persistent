@@ -203,9 +203,10 @@ namespace persistent
             return binary_tree<key_type, value_type>(*this, v);
         }
 
-        void switch_version2(version v)
+        void set_version(version v)
         {
             current_version = v;
+            version_changed();
         }
 
         version get_version() const
@@ -257,21 +258,19 @@ namespace persistent
             if (!root_node)
             {
                 root_node = node_ptr_t(new node_t(key, value));
-                current_version = vtree->insert(current_version, root_node);
+                set_version(vtree->insert(current_version, root_node));
                 vtree->update(current_version, root_node);
-                version_changed();
                 return iterator(current_version, vtree, root_node);
             }
 
             auto parent = find_parent(key, root_node, root_node);
             if (parent->key == key && parent->value == value)
             {
-                version_changed();
                 return iterator(current_version, vtree, parent);
             }
 
             node_ptr_t inserted_node;
-            current_version = vtree->insert(current_version, root_node);
+            set_version(vtree->insert(current_version, root_node));
             if (parent->key == key)
             {
                 parent->set_value(value, current_version, *vtree);
@@ -307,7 +306,6 @@ namespace persistent
                     inserted_node = child;
                 }
             }
-            version_changed();
             return iterator(current_version, vtree, inserted_node);
         }
 
@@ -318,7 +316,7 @@ namespace persistent
                 return it;
             }
 
-            current_version = vtree->insert(current_version, root());
+            set_version(vtree->insert(current_version, root()));
 
             auto& key = it->key;
             auto node = it.node;
@@ -380,7 +378,6 @@ namespace persistent
                 }
                 child2->set_back_pointer(parent, current_version, *vtree);
             }
-            version_changed();
             return ++iterator(current_version, it);
         }
 
@@ -444,4 +441,11 @@ namespace persistent
             return vtree == bst.vtree && current_version == bst.current_version;
         }
     };
+}
+
+template <class key_type, class value_type>
+std::ostream& operator<<(std::ostream& out, const persistent::binary_tree<key_type, value_type>& bst)
+{
+    out << bst.str();
+    return  out;
 }

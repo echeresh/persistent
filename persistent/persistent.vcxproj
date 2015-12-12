@@ -145,6 +145,7 @@
   <ItemGroup>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="map\map.cpp" />
+    <ClCompile Include="version\version.cpp" />
     <ClCompile Include="version\version_tree.h" />
   </ItemGroup>
   <ItemGroup>
