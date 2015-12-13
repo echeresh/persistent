@@ -150,12 +150,15 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="binary_tree\binary_tree.h" />
+    <ClInclude Include="binary_tree\binary_tree_context.h" />
     <ClInclude Include="binary_tree\binary_tree_node.h" />
     <ClInclude Include="binary_tree\key_value_entry.h" />
     <ClInclude Include="include\persistent.h" />
     <ClInclude Include="persistent\persistent_structure.h" />
     <ClInclude Include="utils.h" />
+    <ClInclude Include="vector\vector.h" />
     <ClInclude Include="version\version.h" />
+    <ClInclude Include="version\version_context.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

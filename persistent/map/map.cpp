@@ -10,11 +10,8 @@ namespace persistent
     public:
         typedef typename binary_tree<key_type, value_type>::version version_t;
         typedef typename binary_tree<key_type, value_type>::iterator iterator;
-        typedef typename binary_tree<key_type, value_type>::const_iterator const_iterator;
 
-        map()
-        {
-        }
+        map() = default;
 
         value_type& operator[](const key_type& key)
         {
@@ -30,16 +27,6 @@ namespace persistent
         iterator find(const key_type& key)
         {
             return bst.find(key);
-        }
-
-        const_iterator begin() const
-        {
-            return bst.begin();
-        }
-
-        const_iterator end() const
-        {
-            return bst.end();
         }
 
         iterator begin()

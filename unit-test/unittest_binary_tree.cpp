@@ -115,7 +115,9 @@ TEST(test_binary_tree, test_nested1)
     persistent::binary_tree<int, persistent::binary_tree<int, int>> bst;
     persistent::binary_tree<int, int> nested_bst;
     auto v0 = bst.insert(0, nested_bst).get_version();
-    auto nested = bst.find(0).value_by_value();
+    ASSERT_EQ(bst.find(0)->value.size(), 0);
+
+    auto nested = bst.find(0)->value;
     auto pv = nested.get_parent_version();
     ASSERT_EQ(v0, pv);
 
@@ -123,10 +125,10 @@ TEST(test_binary_tree, test_nested1)
     pv = nested.get_parent_version();
 
     ASSERT_NE(v0, pv);
-    ASSERT_EQ(bst.find(0)->value.size(), 0);
-
-    bst.set_version(pv);
     ASSERT_EQ(bst.find(0)->value.size(), 1);
+
+    bst.set_version(v0);
+    ASSERT_EQ(bst.find(0)->value.size(), 0);
 }
 
 TEST(test_binary_tree, test_nested2)
@@ -147,7 +149,7 @@ TEST(test_binary_tree, test_nested2)
     for (int i = 0; i < size; i++)
     {
         auto dkey = i / (double)size;
-        auto vbst = bst.find(i).value_by_value();
+        auto vbst = bst.find(i)->value;
         vbst.insert(dkey, i + 1);
         last_version = vbst.get_parent_version();
         bst.set_version(last_version);
@@ -157,7 +159,7 @@ TEST(test_binary_tree, test_nested2)
 
     for (int i = 0; i < size; i++)
     {
-        auto& val = bst[i];
+        auto val = bst[i];
         ASSERT_TRUE(val.begin()->value == i);
     }
 
@@ -165,7 +167,7 @@ TEST(test_binary_tree, test_nested2)
 
     for (int i = 0; i < size; i++)
     {
-        auto& val = bst[i];
+        auto val = bst[i];
         ASSERT_TRUE(val.begin()->value == i + 1);
     }
 }

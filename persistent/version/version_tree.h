@@ -75,7 +75,6 @@ namespace persistent
                     where_next_version = where_next->label;
                 }
                 where_version = where_it->label;
-                
             }
             assert(where_version + 1 != where_next_version);
             auto mid_label = where_version + (where_next_version - where_version) / 2;

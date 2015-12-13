@@ -1,27 +1,42 @@
 #pragma once
 #include "version/version.h"
 #include <functional>
+#include <cassert>
 
 namespace persistent
 {
-    template <class T>
-    class persistent_structure
+    class version_structure
     {
-        std::function<version(version, const T&)> callback;
+    public:
+        virtual version get_version() const = 0;
+        virtual void set_version(const version& v) = 0;
+    };
+
+    template <class T>
+    class persistent_structure : public version_structure
+    {
+        std::function<version(version, const T&)> version_changed_notifier;
         version parent_version;
+        version_structure* parent;
 
     public:
         virtual void version_changed()
         {
-            if (callback)
+            if (version_changed_notifier)
             {
-                parent_version = callback(get_version(), (const T&)*this);
+                auto fixed_version = parent_version;
+                parent_version = version_changed_notifier(get_version(), (const T&)*this);
+                if (parent->get_version() == fixed_version)
+                {
+                    parent->set_version(parent_version);
+                }
             }
         }
 
-        virtual void notify_version_changed(std::function<version(version, const T&)> callback)
+        virtual void add_parent(version_structure* parent, std::function<version(version, const T&)> version_changed_notifier)
         {
-            this->callback = callback;
+            this->parent = parent;
+            this->version_changed_notifier = version_changed_notifier;
         }
 
         void set_parent_version(version parent_version)
@@ -30,7 +45,6 @@ namespace persistent
         }
 
         typedef T persistent_type;
-        virtual version get_version() const = 0;
 
         version get_parent_version() const
         {

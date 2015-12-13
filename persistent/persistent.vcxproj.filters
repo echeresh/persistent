@@ -68,5 +68,14 @@
     <ClInclude Include="persistent\persistent_structure.h">
       <Filter>Header Files\persistent</Filter>
     </ClInclude>
+    <ClInclude Include="vector\vector.h">
+      <Filter>Header Files\vector</Filter>
+    </ClInclude>
+    <ClInclude Include="binary_tree\binary_tree_context.h">
+      <Filter>Header Files\binary_tree</Filter>
+    </ClInclude>
+    <ClInclude Include="version\version_context.h">
+      <Filter>Header Files\version</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
