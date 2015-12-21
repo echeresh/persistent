@@ -1,3 +1,4 @@
+#pragma once
 #include <iostream>
 #include <deque>
 #include <iomanip>
@@ -5,10 +6,11 @@ using namespace std;
 
 namespace utils
 {
-    template <class node_ptr_type, class versionype>
-    void print_tree(node_ptr_type node, versionype v, std::ostream& out = cout, const string& prefix = "", bool last = true)
+    template <class node_ptr_t, class version_context_t>
+    void print_tree(node_ptr_t node, const version_context_t& vc, std::ostream& out = cout,
+                    const string& prefix = "", bool last = true)
     {
-        std::istringstream iss(node->str());
+        std::istringstream iss(node->str(vc));
         bool first = true;
         std::string indent = prefix + (last ? "    " : "|   ");
         while (!iss.eof())
@@ -26,8 +28,8 @@ namespace utils
             }
         }
 
-        auto left = node->get_left(v);
-        auto right = node->get_right(v);
+        auto left = node->get_left(vc);
+        auto right = node->get_right(vc);
         if (left || right)
         {
             out << indent << '|' << std::endl;
@@ -42,14 +44,24 @@ namespace utils
         {
             if (right)
             {
-                print_tree(left, v, out, indent, false);
+                print_tree(left, vc, out, indent, false);
             }
             else
             {
-                print_tree(left, v, out, prefix + (last ? "    " : "|   "), true);
+                print_tree(left, vc, out, prefix + (last ? "    " : "|   "), true);
                 return;
             }
         }
-        print_tree(right, v, out, prefix + (last ? "    " : "|   "), true);
+        print_tree(right, vc, out, prefix + (last ? "    " : "|   "), true);
+    }
+
+    template <class node_ptr_t, class version_context_t>
+    void print_list(node_ptr_t node, const version_context_t& vc, std::ostream& out = cout)
+    {
+        while (node)
+        {
+            out << node->str(vc) << endl;
+            node = node->get_next(vc);
+        }
     }
 }
