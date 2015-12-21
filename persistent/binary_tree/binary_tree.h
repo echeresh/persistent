@@ -2,8 +2,6 @@
 #include <memory>
 #include <vector>
 #include <cassert>
-#include <tuple>
-#include <sstream>
 #include "persistent/persistent_structure.h"
 #include "version/version_tree.h"
 #include "binary_tree_node.h"
@@ -254,7 +252,7 @@ namespace persistent
             }
 
             
-            new_bp child becomes parent
+            //new_bp child becomes parent
             //second child subtree will be inserted in a tree again
 
             if (bp)
@@ -305,10 +303,10 @@ namespace persistent
             return ++iterator(current_version, it);
         }
 
-        std::string str() const
+        std::string str()
         {
             std::ostringstream oss;
-            utils::print_tree(root(), current_version);
+            utils::print_tree(root(), get_vc());
             return oss.str();
         }
 
@@ -351,7 +349,7 @@ namespace persistent
 }
 
 template <class key_type, class value_type>
-std::ostream& operator<<(std::ostream& out, const persistent::binary_tree<key_type, value_type>& bst)
+std::ostream& operator<<(std::ostream& out, persistent::binary_tree<key_type, value_type>& bst)
 {
     out << bst.str();
     return  out;

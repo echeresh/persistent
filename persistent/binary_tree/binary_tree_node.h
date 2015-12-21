@@ -1,3 +1,4 @@
+#pragma once
 #include "key_value_entry.h"
 #include "version/version_tree.h"
 #include "version/version_context.h"
@@ -195,6 +196,7 @@ namespace persistent
         node_ptr_t split_and_update(const version_context_t& vc)
         {
             auto new_node = split(vc);
+            //todo: call get_back_pointer
             if (!back_pointer)
             {
                 //node is root so root pointer of version v should be updated
@@ -390,11 +392,10 @@ namespace persistent
             return next_parent(vc);
         }
 
-        std::string str() const
+        std::string str(const version_context_t& vc)
         {
             std::ostringstream oss;
-            //oss << "(" << key << " : " << value << ")";
-            oss << key << endl;
+            oss << get_key(vc);
             return oss.str();
         }
     };
