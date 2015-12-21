@@ -154,6 +154,8 @@
     <ClInclude Include="binary_tree\binary_tree_node.h" />
     <ClInclude Include="binary_tree\key_value_entry.h" />
     <ClInclude Include="include\persistent.h" />
+    <ClInclude Include="linked_list\linked_list.h" />
+    <ClInclude Include="linked_list\linked_list_node.h" />
     <ClInclude Include="persistent\persistent_structure.h" />
     <ClInclude Include="utils.h" />
     <ClInclude Include="vector\vector.h" />

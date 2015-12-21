@@ -31,6 +31,9 @@
     <Filter Include="Header Files\persistent">
       <UniqueIdentifier>{1e43f710-327f-46f5-92df-dc8428b355f5}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\linked_list">
+      <UniqueIdentifier>{5d6dc6c5-f99e-49f2-b4c3-bb233bee0e66}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -76,6 +79,12 @@
     </ClInclude>
     <ClInclude Include="version\version_context.h">
       <Filter>Header Files\version</Filter>
+    </ClInclude>
+    <ClInclude Include="linked_list\linked_list.h">
+      <Filter>Header Files\linked_list</Filter>
+    </ClInclude>
+    <ClInclude Include="linked_list\linked_list_node.h">
+      <Filter>Header Files\linked_list</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
