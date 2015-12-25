@@ -11,6 +11,7 @@ namespace persistent
         std::function<version(version, const T&)> version_changed_callback;
         version parent_version;
         version_structure* parent;
+        version_history history;
 
     public:
         virtual void version_changed()
@@ -23,6 +24,27 @@ namespace persistent
                 {
                     parent->set_version(parent_version);
                 }
+            }
+            history.add_item(get_version());
+        }
+
+        void undo()
+        {
+            auto v = get_version();
+            set_version(history.pop_undo());
+            if (get_version() == v)
+            {
+                undo();
+            }
+        }
+
+        void redo()
+        {
+            auto v = get_version();
+            set_version(history.pop_redo());
+            if (get_version() == v)
+            {
+                redo();
             }
         }
 

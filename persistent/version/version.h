@@ -4,6 +4,7 @@
 #include <list>
 #include <utility>
 #include <memory>
+#include <cassert>
 #include <sstream>
 #include <ostream>
 
@@ -14,7 +15,8 @@ namespace persistent
     class version_impl
     {
     public:
-        virtual label_type get_label() const = 0;
+        virtual label_type get_begin_label() const = 0;
+        virtual label_type get_end_label() const = 0;
     };
 
     class version
@@ -34,46 +36,33 @@ namespace persistent
 
         bool operator<(const version& v) const
         {
-            if (!impl)
+            if (!impl || !v.impl)
             {
                 return true;
             }
-            if (!v.impl)
-            {
-                return false;
-            }
-            return impl->get_label() < v.impl->get_label();
+            return impl->get_begin_label() < v.impl->get_begin_label() &&
+                   v.impl->get_end_label() < impl->get_end_label();
         }
 
         bool operator<=(const version& v) const
         {
-            if (!impl)
-            {
-                return true;
-            }
-            if (!v.impl)
-            {
-                return false;
-            }
-            return impl->get_label() <= v.impl->get_label();
+            return *this == v || *this < v;
         }
 
         bool operator==(const version& v) const
         {
+            assert(impl && v.impl);
             if (!impl || !v.impl)
             {
                 return impl == v.impl;
             }
-            return impl->get_label() == v.impl->get_label();
+            return impl->get_begin_label() == v.impl->get_begin_label() &&
+                   impl->get_end_label() == v.impl->get_end_label();;
         }
 
         bool operator!=(const version& v) const
         {
-            if (!impl || !v.impl)
-            {
-                return impl != v.impl;
-            }
-            return impl->get_label() != v.impl->get_label();
+            return !operator==(v);
         }
 
 
@@ -85,7 +74,7 @@ namespace persistent
         std::string str() const
         {
             std::ostringstream oss;
-            oss << impl->get_label();
+            oss << "(" << impl->get_begin_label() << ", " << impl->get_end_label() << ")";
             return oss.str();
         }
     };
@@ -97,7 +86,9 @@ namespace persistent
         typedef typename std::list<version_internal<value_type>>::iterator iterator_t;
         static list_t default_version_list;
 
-        label_type label;
+        label_type begin_label;
+        label_type end_label;
+        label_type free_range;
         value_type value;
         iterator_t list_iterator;
 
@@ -106,10 +97,14 @@ namespace persistent
         {
         }
 
-        version_internal(const label_type& label,
+        version_internal(const label_type& begin_label,
+                         const label_type& end_label,
+                         const label_type& free_size,
                          const value_type& value = value_type(),
                          iterator_t list_iterator = iterator_t()) :
-            label(label),
+            begin_label(begin_label),
+            end_label(end_label),
+            free_range(free_size),
             value(value),
             list_iterator(list_iterator)
         {
@@ -120,14 +115,19 @@ namespace persistent
             return version(this);
         }
 
-        label_type get_label() const
+        label_type get_begin_label() const
         {
-            return label;
+            return begin_label;
+        }
+
+        label_type get_end_label() const
+        {
+            return end_label;
         }
     };
 
     template <class value_type>
-    typename version_internal<value_type>::list_t version_internal<value_type>::default_version_list = { version_internal<value_type>(0) };
+    typename version_internal<value_type>::list_t version_internal<value_type>::default_version_list = { version_internal<value_type>() };
 }
 
 //std::ostream& operator<<(std::ostream& out, persistent::version v);

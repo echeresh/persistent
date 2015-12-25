@@ -1,5 +1,7 @@
 #pragma once
 #include <list>
+#include <map>
+#include <utility>
 #include "version.h"
 
 namespace persistent
@@ -17,12 +19,30 @@ namespace persistent
             auto sz = version_list.size();
             auto min_value = std::numeric_limits<label_type>::min() + 1;
             auto max_value = std::numeric_limits<label_type>::max();
-            auto step = (label_type)((max_value - min_value) / sz);
+            auto step = (label_type)((max_value - min_value) / sz / 2);
             assert(step > 1);
-            auto label = min_value;
+
+            std::map<label_type, version_internal<value_type>*> m;
             for (auto& v : version_list)
             {
-                v.label = label;
+                m[v.begin_label] = &v;
+                m[v.end_label] = &v;
+            }
+
+            label_type label = min_value;
+            for (auto& e : m)
+            {
+                auto* v_int = e.second;
+                if (v_int->end_label != 0)
+                {
+                    v_int->begin_label = label;
+                    v_int->end_label = 0;
+                }
+                else
+                {
+                    v_int->end_label = label;
+                    v_int->free_range = step - 1;
+                }
                 label += step;
             }
         }
@@ -30,11 +50,12 @@ namespace persistent
     public:
         version_tree(const value_type& root_value = value_type())
         {
-            label_type min_value = std::numeric_limits<label_type>::min();
-            //support only unsigned types
+            auto min_value = std::numeric_limits<label_type>::min();
+            auto max_value = std::numeric_limits<label_type>::max();
             assert(min_value == 0);
-            //reserve 0 value for default version
-            version_list.push_back(version_internal<value_type>(min_value + 1, root_value));
+            //reserve 0 value jic
+            auto free_range = max_value - min_value - 2;
+            version_list.push_back(version_internal<value_type>(min_value + 1, max_value, free_range, root_value));
             version_list.begin()->list_iterator = version_list.begin();
         }
 
@@ -61,24 +82,23 @@ namespace persistent
             auto where_it = impl->list_iterator;
             auto where_next = where_it;
             where_next++;
-            auto where_version = where_it->label;
-            auto where_next_version = std::numeric_limits<label_type>::max();
-            if (where_next != version_list.end())
-            {
-                where_next_version = where_next->label;
-            }
-            if (where_version + 1 == where_next_version)
+            auto e = impl->end_label;
+            auto f = impl->free_range;
+            if (f < 2)
             {
                 redistribute();
-                if (where_next != version_list.end())
-                {
-                    where_next_version = where_next->label;
-                }
-                where_version = where_it->label;
             }
-            assert(where_version + 1 != where_next_version);
-            auto mid_label = where_version + (where_next_version - where_version) / 2;
-            auto it = version_list.insert(where_next, version_internal<value_type>(mid_label, value));
+            e = impl->end_label;
+            f = impl->free_range;
+            assert(f >= 2);
+            auto f_step = (f + 1) / 3;
+            assert(f_step >= 1);
+            auto new_beg = e - f - 1 + f_step;
+            auto new_end = new_beg + f_step;
+            auto new_free = new_end - new_beg - 1;
+            assert(new_end < e);
+            impl->free_range = e - new_end - 1;
+            auto it = version_list.insert(where_next, version_internal<value_type>(new_beg, new_end, new_free, value));
             it->list_iterator = it;
             return *it;
         }
