@@ -162,11 +162,12 @@
     <ClInclude Include="linked_list\linked_list_node.h" />
     <ClInclude Include="persistent\persistent_structure.h" />
     <ClInclude Include="utils.h" />
+    <ClInclude Include="vector\fat_vector.h" />
     <ClInclude Include="vector\vector.h" />
-    <ClInclude Include="vector_tree.h" />
     <ClInclude Include="version\version.h" />
     <ClInclude Include="version\version_changed_notifier.h" />
     <ClInclude Include="version\version_context.h" />
+    <ClInclude Include="version\version_history.h" />
     <ClInclude Include="version\version_structure.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

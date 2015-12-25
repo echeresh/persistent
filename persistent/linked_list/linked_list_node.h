@@ -3,11 +3,11 @@
 
 namespace persistent
 {
-    template <class value_type>
+    template <class value_type, bool fat_node = false>
     struct linked_list_node :
-        std::enable_shared_from_this<linked_list_node<value_type>>
+        std::enable_shared_from_this<linked_list_node<value_type, fat_node>>
     {
-        typedef typename linked_list_node<value_type> node_t;
+        typedef typename linked_list_node<value_type, fat_node> node_t;
         typedef typename std::shared_ptr<node_t> node_ptr_t;
         typedef typename version_tree<node_ptr_t> version_tree_t;
         typedef typename version_context<node_ptr_t> version_context_t;
@@ -44,7 +44,7 @@ namespace persistent
                     break;
                 }
             }
-            mod_box_entry(mod_type type, version v, const std::shared_ptr<linked_list_node>& new_value) :
+            mod_box_entry(mod_type type, version v, const node_ptr_t& new_value) :
                 type(type),
                 v(v)
             {
@@ -72,10 +72,10 @@ namespace persistent
         std::vector<mod_box_entry> mod_box;
 
         linked_list_node(const value_type& value,
-            const version_context_t& vc,
-            node_ptr_t prev = node_ptr_t(),
-            node_ptr_t next = node_ptr_t(),
-            const std::vector<mod_box_entry>& mod_box = std::vector<mod_box_entry>(2 * (2 + 1 + 1))) :
+                         const version_context_t& vc,
+                         node_ptr_t prev = node_ptr_t(),
+                         node_ptr_t next = node_ptr_t(),
+                         const std::vector<mod_box_entry>& mod_box = std::vector<mod_box_entry>(2 * (2 + 1 + 1))) :
             value(value),
             prev(prev),
             next(next),
@@ -128,8 +128,16 @@ namespace persistent
             add_mod_generic(type, v, node);
         }
 
-        bool is_mod_box_full() const
+        bool is_mod_box_full()
         {
+            if (fat_node)
+            {
+                if (mod_box.back().type != mod_type::empty_mod)
+                {
+                    mod_box.resize((size_t)(mod_box.size() * 1.5));
+                }
+                return false;
+            }
             return mod_box.back().type != mod_type::empty_mod;
         }
 
@@ -197,7 +205,6 @@ namespace persistent
         void register_callbacks(T& val, const version_context_t& vc)
         {
         }
-
 
         void set_value(const value_type& val, const version_context_t& vc)
         {

@@ -3,20 +3,21 @@
 #include "persistent/persistent_structure.h"
 #include "version.h"
 #include "linked_list_node.h"
+#include "vector/vector.h"
 #include "utils.h"
 
 namespace persistent
 {
-    template <class value_type>
+    template <class value_type, bool fat_node = false>
     class linked_list :
-        public persistent_structure<linked_list<value_type>>
+        public persistent_structure<linked_list<value_type, fat_node>>
     {
     public:
-        typedef typename linked_list_node<value_type> node_t;
+        typedef typename linked_list_node<value_type, fat_node> node_t;
         typedef typename std::shared_ptr<node_t> node_ptr_t;
         typedef typename version_context<node_ptr_t> version_context_t;
 
-    private:
+    //private:
         std::shared_ptr<version_tree<node_ptr_t>> vtree;
         version current_version;
 
@@ -31,9 +32,9 @@ namespace persistent
         }
 
     public:
-        class iterator
+        struct iterator
         {
-            linked_list<value_type>* l;
+            linked_list<value_type, fat_node>* l;
             node_ptr_t node;
 
             std::shared_ptr<value_type> kve;
@@ -43,10 +44,9 @@ namespace persistent
                 return node->get_value(vc);
             }
 
-        public:
             friend class linked_list;
 
-            iterator(linked_list<value_type>* l, node_ptr_t node = node_ptr_t()) :
+            iterator(linked_list<value_type, fat_node>* l, node_ptr_t node = node_ptr_t()) :
                 l(l),
                 node(node)
             {
@@ -107,9 +107,9 @@ namespace persistent
         {
         }
 
-        linked_list<value_type> create_with_version(version v)
+        linked_list<value_type, fat_node> create_with_version(version v)
         {
-            return linked_list<value_type>(*this, v);
+            return linked_list<value_type, fat_node>(*this, v);
         }
 
         void set_version(const version& v)
@@ -237,8 +237,8 @@ namespace persistent
     };
 }
 
-template <class value_type>
-std::ostream& operator<<(std::ostream& out, persistent::linked_list<value_type>& l)
+template <class value_type, bool fat_node>
+std::ostream& operator<<(std::ostream& out, persistent::linked_list<value_type, fat_node>& l)
 {
     out << l.str();
     return  out;

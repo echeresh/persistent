@@ -155,6 +155,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="unittest_binary_tree.cpp" />
+    <ClCompile Include="unittest_fat_vector.cpp" />
     <ClCompile Include="unittest_linked_list.cpp" />
     <ClCompile Include="unittest_vector.cpp" />
     <ClCompile Include="unittest_version_tree.cpp" />
