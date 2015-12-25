@@ -1,7 +1,7 @@
 #pragma once
 #include <memory>
 #include "persistent/persistent_structure.h"
-#include "version/version_tree.h"
+#include "version.h"
 #include "linked_list_node.h"
 #include "utils.h"
 
@@ -33,7 +33,7 @@ namespace persistent
     public:
         class iterator
         {
-            version_context_t vc;
+            linked_list<value_type>* l;
             node_ptr_t node;
 
             std::shared_ptr<value_type> kve;
@@ -46,18 +46,19 @@ namespace persistent
         public:
             friend class linked_list;
 
-            iterator(const version_context_t& vc, node_ptr_t node = node_ptr_t()) :
-                vc(vc),
+            iterator(linked_list<value_type>* l, node_ptr_t node = node_ptr_t()) :
+                l(l),
                 node(node)
             {
                 if (node)
                 {
-                    kve = std::shared_ptr<value_type>(new value_type(node->get_value(vc)));
+                    kve = std::shared_ptr<value_type>(new value_type(node->get_value(l->get_vc())));
                 }
             }
 
             iterator& operator++()
             {
+                auto vc = l->get_vc();
                 node = node->get_next(vc);
                 kve.reset();
                 if (node)
@@ -74,12 +75,12 @@ namespace persistent
 
             bool operator==(const iterator& it) const
             {
-                return node == it.node;
+                return node == it.node && get_version() == it.get_version();
             }
 
             bool operator!=(const iterator& it) const
             {
-                return node != it.node;
+                return !operator==(it);
             }
 
             value_type* operator->() const
@@ -90,7 +91,7 @@ namespace persistent
 
             version get_version() const
             {
-                return vc.v;
+                return l->get_version();
             }
         };
 
@@ -106,7 +107,7 @@ namespace persistent
         {
         }
 
-        linked_list<value_type> create_by_version(version v)
+        linked_list<value_type> create_with_version(version v)
         {
             return linked_list<value_type>(*this, v);
         }
@@ -122,6 +123,13 @@ namespace persistent
             return current_version;
         }
 
+        void switch_new_version() override
+        {
+            auto head_node = head();
+            auto new_version = vtree->insert(current_version, head_node);
+            current_version = new_version;
+        }
+
         std::string str()
         {
             std::ostringstream oss;
@@ -132,12 +140,12 @@ namespace persistent
         iterator begin()
         {
             auto head_node = head();
-            return iterator(get_vc(), head_node);
+            return iterator(this, head_node);
         }
 
         iterator end()
         {
-            return iterator(get_vc());
+            return iterator(this);
         }
 
         size_t size()
@@ -157,7 +165,10 @@ namespace persistent
             {
                 return;
             }
-            set_version(vtree->insert(current_version, head_node));
+
+            version_changed_notifier vcn(*this);
+            switch_new_version();
+
             auto prev = head_node->get_prev(get_vc());
             auto next = head_node->get_next(get_vc());
             assert(!prev);
@@ -170,9 +181,10 @@ namespace persistent
 
         void push_front(const value_type& value)
         {
-            auto head_node = head();
-            set_version(vtree->insert(current_version, head_node));
+            version_changed_notifier vcn(*this);
+            switch_new_version();
 
+            auto head_node = head();
             auto new_head_node = node_ptr_t(new node_t(value, get_vc(), node_ptr_t(), head_node));
             vtree->update(get_version(), new_head_node);
 
@@ -184,10 +196,11 @@ namespace persistent
 
         iterator erase(iterator it)
         {
-            auto head_node = head();
-            assert(it.vc.v == get_vc().v);
+            version_changed_notifier vcn(*this);
+            switch_new_version();
 
-            set_version(vtree->insert(current_version, head_node));
+            auto head_node = head();
+            assert(it.get_version() == get_version());
 
             auto vc = get_vc();
             auto erased_node = it.node;
@@ -205,7 +218,7 @@ namespace persistent
             {
                 vtree->update(get_version(), next);
             }
-            return iterator(get_vc(), next);
+            return iterator(this, next);
         }
 
         iterator find(const value_type& value)

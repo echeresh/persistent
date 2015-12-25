@@ -1,5 +1,4 @@
-#include "version/version.h"
-#include "version/version_tree.h"
+#include "version.h"
 #include "persistent/persistent_structure.h"
 #include <vector>
 
@@ -15,19 +14,6 @@ namespace persistent
         std::shared_ptr<version_tree<vector_ptr_t>> vtree;
         version current_version;
 
-        static version copy_into_new_version(const version_context_t& vc, bool update_version = true)
-        {
-            auto& vec = *vc.vtree->get_value(vc.v);
-            version new_version = vc.vtree->insert(vc.v, vector_ptr_t(new std::vector<value_type>()));
-            auto vptr = vc.vtree->get_value(new_version);
-            *vptr = vec;
-            if (update_version)
-            {
-                vc.vs->set_version(new_version);
-            }
-            return new_version;
-        }
-
         version_context_t get_vc()
         {
             return version_context_t(this, get_version(), vtree.get());
@@ -36,8 +22,7 @@ namespace persistent
     public:
         class iterator
         {
-            version_context_t vc;
-            vector_ptr_t vector_ptr;
+            vector<value_type>* vec;
             int index;
 
             value_type get_value(value_type& val)
@@ -48,20 +33,16 @@ namespace persistent
             template <class T>
             T get_value_sfinae(typename T::persistent_type& val)
             {
-                cout << "pds" << endl;
                 auto& pds = (persistent_structure<value_type>&)val;
-                pds.set_parent_version(vc.v);
+                pds.set_parent_version(vec->get_version());
                 int index = this->index;
-                version_context_t vc = this->vc;
-                pds.add_parent(vc.vs,
-                    [&, vc, index](version node_version, const value_type& new_value)
-                    {
-                        auto root = vc.vtree->get_value(vc.v);
-                        auto new_version = vector<value_type>::copy_into_new_version(vc, false);
-                        auto& new_vec = *vc.vtree->get_value(new_version);
-                        new_vec[index] = new_value;
-                        return new_version;
-                    });
+                auto* vec = this->vec;
+                pds.add_parent(vec,
+                               [&, vec, index](version node_version, const value_type& new_value)
+                               {
+                                   vec->update(index, new_value);
+                                   return vec->get_version();
+                               });
                 return val;
             }
 
@@ -75,15 +56,9 @@ namespace persistent
         public:
             friend class vector;
 
-            iterator(const version_context_t& vc, int index) :
-                vc(vc),
-                vector_ptr(vc.vtree->get_value(vc.v)),
+            iterator(vector<value_type>* vec, int index) :
+                vec(vec),
                 index(index)
-            {
-            }
-
-            iterator(version v, const iterator& it) :
-                iterator(version_context_t(it.vc.vs, v, it.vc.vtree), it.index)
             {
             }
 
@@ -95,22 +70,22 @@ namespace persistent
 
             value_type operator*()
             {
-                return get_value((*vector_ptr)[index]);
+                return get_value((*vec)[index]);
             }
 
             bool operator==(const iterator& it) const
             {
-                return index == it.index;
+                return index == it.index && get_version() == it.get_version();
             }
 
             bool operator!=(const iterator& it) const
             {
-                return index != it.index;
+                return !operator==(it);
             }
 
             version get_version() const
             {
-                return vc.v;
+                return vec->get_version();
             }
         };
 
@@ -121,21 +96,43 @@ namespace persistent
             vtree->update(vtree->root_version(), vector_ptr_t(new std::vector<value_type>()));
         }
 
+        vector(vector& vec, version v) :
+            vtree(vec.vtree),
+            current_version(v)
+        {
+        }
+
+        vector<value_type> create_with_version(version v) override
+        {
+            return vector<value_type>(*this, v);
+        }
+
         value_type& operator[](int index)
         {
             auto& v = get_std_vector();
             return v[index];
         }
 
-        void set_version(const version& v)
+        void set_version(const version& v) override
         {
+            version_changed_notifier vcn(*this);
             current_version = v;
-            version_changed();
+            
         }
 
-        version get_version() const
+        version get_version() const override
         {
             return current_version;
+        }
+
+        void switch_new_version() override
+        {
+            auto vc = get_vc();
+            auto& vec = *vc.vtree->get_value(vc.v);
+            version new_version = vc.vtree->insert(vc.v, vector_ptr_t(new std::vector<value_type>()));
+            auto vptr = vc.vtree->get_value(new_version);
+            *vptr = vec;
+            current_version = new_version;
         }
 
         bool operator==(const vector& v)
@@ -145,29 +142,34 @@ namespace persistent
 
         void resize(size_t new_size, value_type val = value_type())
         {
-            auto& v = get_std_vector();
-            v.resize(new_size, val);
+            version_changed_notifier vcn(*this);
+            switch_new_version();
+            auto& vec = get_std_vector();
+            vec.resize(new_size, val);
         }
 
         void update(int index, const value_type& val)
         {
-            copy_into_new_version(get_vc());
-            auto& v = get_std_vector();
-            v[index] = val;
+            version_changed_notifier vcn(*this);
+            switch_new_version();
+            auto& vec = get_std_vector();
+            vec[index] = val;
         }
 
         iterator erase(iterator it)
         {
-            copy_into_new_version(get_vc());
-            auto& v = get_std_vector();
+            version_changed_notifier vcn(*this);
+            switch_new_version();
+            auto& vec = get_std_vector();
             int index = it.index;
-            v.erase(v.begin() + index);
+            vec.erase(ec.begin() + index);
             return iterator(get_version(), vtree, index);
         }
 
         void push_back(const value_type& val)
         {
-            copy_into_new_version(get_vc());
+            version_changed_notifier vcn(*this);
+            switch_new_version();
             auto& v = get_std_vector();
             v.push_back(val);
         }
@@ -189,12 +191,12 @@ namespace persistent
 
         iterator begin()
         {
-            return iterator(get_vc(), 0);
+            return iterator(this, 0);
         }
 
         iterator end()
         {
-            return iterator(get_vc(), size());
+            return iterator(this, size());
         }
     };
 }

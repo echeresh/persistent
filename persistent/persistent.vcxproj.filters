@@ -74,9 +74,6 @@
     <ClInclude Include="vector\vector.h">
       <Filter>Header Files\vector</Filter>
     </ClInclude>
-    <ClInclude Include="binary_tree\binary_tree_context.h">
-      <Filter>Header Files\binary_tree</Filter>
-    </ClInclude>
     <ClInclude Include="version\version_context.h">
       <Filter>Header Files\version</Filter>
     </ClInclude>
@@ -85,6 +82,18 @@
     </ClInclude>
     <ClInclude Include="linked_list\linked_list_node.h">
       <Filter>Header Files\linked_list</Filter>
+    </ClInclude>
+    <ClInclude Include="vector_tree.h">
+      <Filter>Header Files\vector</Filter>
+    </ClInclude>
+    <ClInclude Include="version\version_structure.h">
+      <Filter>Header Files\version</Filter>
+    </ClInclude>
+    <ClInclude Include="version\version_changed_notifier.h">
+      <Filter>Header Files\version</Filter>
+    </ClInclude>
+    <ClInclude Include="include\version.h">
+      <Filter>Header Files\include</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

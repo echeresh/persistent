@@ -3,7 +3,7 @@
 #include <vector>
 #include <cassert>
 #include "persistent/persistent_structure.h"
-#include "version/version_tree.h"
+#include "version.h"
 #include "binary_tree_node.h"
 #include "utils.h"
 
@@ -60,43 +60,40 @@ namespace persistent
     public:
         class iterator
         {
-            version_context_t vc;
+            binary_tree<key_type, value_type>* bst;
             node_ptr_t node;
 
             std::shared_ptr<key_value_entry<key_type, value_type>> kve;
 
-            const value_type& get_const_value_ref() const
+            value_type& get_value_ref() const
             {
-                return node->get_value(vc);
+                return node->get_value(bst->get_vc());
             }
 
         public:
             friend class binary_tree;
 
-            iterator(const version_context_t& vc, node_ptr_t node = node_ptr_t()) :
-                vc(vc),
+            iterator(binary_tree<key_type, value_type>* bst, node_ptr_t node = node_ptr_t()) :
+                bst(bst),
                 node(node)
             {
                 if (node)
                 {
+                    auto vc = bst->get_vc();
                     kve = std::shared_ptr<key_value_entry<key_type, value_type>>
                         (new key_value_entry<key_type, value_type>(node->get_key(vc), node->get_value(vc)));
                 }
             }
 
-            iterator(version v, const iterator& it) :
-                iterator(version_context_t(vc.vs, v, vc.vtree), it.node)
-            {
-            }
-
             iterator& operator++()
             {
+                auto vc = bst->get_vc();
                 node = node->next_node(vc);
                 kve.reset();
                 if (node)
                 {
-                    auto* kvep = new key_value_entry<key_type, value_type>(node->get_key(vc), node->get_value(vc));
-                    kve = std::shared_ptr<key_value_entry<key_type, value_type>>(kvep);
+                    kve = std::shared_ptr<key_value_entry<key_type, value_type>>
+                        (new key_value_entry<key_type, value_type>(node->get_key(vc), node->get_value(vc)));
                 }
                 return *this;
             }
@@ -108,12 +105,12 @@ namespace persistent
 
             bool operator==(const iterator& it) const
             {
-                return node == it.node;
+                return node == it.node && get_version() == it.get_version();
             }
 
             bool operator!=(const iterator& it) const
             {
-                return node != it.node;
+                return !operator==(it);
             }
 
             key_value_entry<key_type, value_type>* operator->() const
@@ -123,7 +120,7 @@ namespace persistent
 
             version get_version() const
             {
-                return vc.v;
+                return bst->get_version();
             }
         };
 
@@ -139,7 +136,7 @@ namespace persistent
         {
         }
 
-        binary_tree<key_type, value_type> create_by_version(version v)
+        binary_tree<key_type, value_type> create_with_version(version v) override
         {
             return binary_tree<key_type, value_type>(*this, v);
         }
@@ -155,6 +152,13 @@ namespace persistent
             return current_version;
         }
 
+        void switch_new_version() override
+        {
+            auto root_node = root();
+            auto new_version = vtree->insert(current_version, root_node);
+            current_version = new_version;
+        }
+
         iterator find(const key_type& key)
         {
             auto root_node = root();
@@ -165,34 +169,34 @@ namespace persistent
             auto parent = find_parent(key, root_node, root_node);
             if (parent->key == key)
             {
-                return iterator(get_vc(), parent);
+                return iterator(this, parent);
             }
             else if (key < parent->key)
             {
-                return iterator(get_vc(), parent->get_left(get_vc()));
+                return iterator(this, parent->get_left(get_vc()));
             }
-            return iterator(get_vc(), parent->get_right(get_vc()));
+            return iterator(this, parent->get_right(get_vc()));
         }
 
         iterator insert(const key_type& key, const value_type& value)
         {
+            version_changed_notifier vcn(*this);
+            switch_new_version();
             auto root_node = root();
             if (!root_node)
             {
-                set_version(vtree->insert(current_version, root_node));
                 root_node = node_ptr_t(new node_t(key, value, get_vc()));
                 vtree->update(get_version(), root_node);
-                return iterator(get_vc(), root_node);
+                return iterator(this, root_node);
             }
 
             auto parent = find_parent(key, root_node, root_node);
             if (parent->key == key && parent->value == value)
             {
-                return iterator(get_vc(), parent);
+                return iterator(this, parent);
             }
 
             node_ptr_t inserted_node;
-            set_version(vtree->insert(current_version, root_node));
             if (parent->key == key)
             {
                 parent->set_value(value, get_vc());
@@ -228,7 +232,7 @@ namespace persistent
                     inserted_node = child;
                 }
             }
-            return iterator(get_vc(), inserted_node);
+            return iterator(this, inserted_node);
         }
 
         iterator erase(iterator it)
@@ -238,12 +242,14 @@ namespace persistent
                 return it;
             }
 
-            set_version(vtree->insert(current_version, root()));
+            version_changed_notifier vcn(*this);
+            switch_new_version();
 
             auto& key = it->key;
             auto node = it.node;
             auto left = node->get_left(get_vc());
             auto right = node->get_right(get_vc());
+            auto next = node->next_node(get_vc());
             auto bp = node->get_back_pointer(get_vc());
             node_ptr_t new_bp = left;
             if (!left && right)
@@ -251,10 +257,8 @@ namespace persistent
                 new_bp = right;
             }
 
-            
             //new_bp child becomes parent
             //second child subtree will be inserted in a tree again
-
             if (bp)
             {
                 //node is not root
@@ -300,7 +304,7 @@ namespace persistent
                 }
                 child2->set_back_pointer(parent, get_vc());
             }
-            return ++iterator(current_version, it);
+            return iterator(this, next);
         }
 
         std::string str()
@@ -310,25 +314,27 @@ namespace persistent
             return oss.str();
         }
 
-        const value_type& operator[](const key_type& key)
+        value_type& operator[](const key_type& key)
         {
             auto it = find(key);
             if (it == end())
             {
+                version_changed_notifier vcn(*this);
+                switch_new_version();
                 it = insert(key, value_type());
             }
-            return it.get_const_value_ref();
+            return it.get_value_ref();
         }
 
         iterator begin()
         {
             auto root_node = root();
-            return iterator(get_vc(), root_node ? root_node->leftmost_child(get_vc()) : root_node);
+            return iterator(this, root_node ? root_node->leftmost_child(get_vc()) : root_node);
         }
 
         iterator end()
         {
-            return iterator(get_vc());
+            return iterator(this);
         }
 
         size_t size()

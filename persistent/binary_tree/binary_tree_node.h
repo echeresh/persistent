@@ -83,11 +83,11 @@ namespace persistent
         std::vector<mod_box_entry> mod_box;
 
         binary_tree_node(const key_type& key, const value_type& value,
-            const version_context_t& vc,
-            node_ptr_t back_pointer = node_ptr_t(),
-            node_ptr_t left = node_ptr_t(),
-            node_ptr_t right = node_ptr_t(),
-            const std::vector<mod_box_entry>& mod_box = std::vector<mod_box_entry>(2 * (2 + 1 + 1))) :
+                         const version_context_t& vc,
+                         node_ptr_t back_pointer = node_ptr_t(),
+                         node_ptr_t left = node_ptr_t(),
+                         node_ptr_t right = node_ptr_t(),
+                         const std::vector<mod_box_entry>& mod_box = std::vector<mod_box_entry>(2 * (2 + 1 + 1))) :
             key(key),
             value(value),
             back_pointer(back_pointer),

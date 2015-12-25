@@ -101,11 +101,15 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\include</AdditionalIncludeDirectories>
+      <BrowseInformation>true</BrowseInformation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <Bscmake>
+      <PreserveSbr>true</PreserveSbr>
+    </Bscmake>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -150,17 +154,20 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="binary_tree\binary_tree.h" />
-    <ClInclude Include="binary_tree\binary_tree_context.h" />
     <ClInclude Include="binary_tree\binary_tree_node.h" />
     <ClInclude Include="binary_tree\key_value_entry.h" />
     <ClInclude Include="include\persistent.h" />
+    <ClInclude Include="include\version.h" />
     <ClInclude Include="linked_list\linked_list.h" />
     <ClInclude Include="linked_list\linked_list_node.h" />
     <ClInclude Include="persistent\persistent_structure.h" />
     <ClInclude Include="utils.h" />
     <ClInclude Include="vector\vector.h" />
+    <ClInclude Include="vector_tree.h" />
     <ClInclude Include="version\version.h" />
+    <ClInclude Include="version\version_changed_notifier.h" />
     <ClInclude Include="version\version_context.h" />
+    <ClInclude Include="version\version_structure.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

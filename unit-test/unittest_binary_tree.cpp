@@ -1,10 +1,9 @@
 #include "gtest/gtest.h"
 #include "persistent.h"
-using namespace persistent;
 
-static binary_tree<int, int> construct_random_tree(int size)
+static persistent::binary_tree<int, int> construct_random_tree(int size)
 {
-    binary_tree<int, int> bst;
+    persistent::binary_tree<int, int> bst;
     for (int i = 0; i < size; i++)
     {
         int key = rand() % 100;
@@ -55,9 +54,9 @@ TEST(test_binary_tree, test_construction3)
     ASSERT_TRUE(v0 != v1);
     auto v2 = bst.insert(1, 2).get_version();
     ASSERT_TRUE(bst[1] == 2);
-    ASSERT_TRUE(bst.create_by_version(v0)[1] == 0);
-    ASSERT_TRUE(bst.create_by_version(v1)[1] == 1);
-    ASSERT_TRUE(bst.create_by_version(v2)[1] == 2);
+    ASSERT_TRUE(bst.create_with_version(v0)[1] == 0);
+    ASSERT_TRUE(bst.create_with_version(v1)[1] == 1);
+    ASSERT_TRUE(bst.create_with_version(v2)[1] == 2);
 }
 
 TEST(test_binary_tree, test_iterator)
@@ -138,14 +137,14 @@ TEST(test_binary_tree, test_nested2)
 
     for (int i = 0; i < size; i++)
     {
-        binary_tree<double, int> dbst;
+        persistent::binary_tree<double, int> dbst;
         auto dkey = i / (double)size;
         dbst.insert(dkey, i);
         bst.insert(i, dbst);
     }
 
-    version init_version = bst.get_version();
-    version last_version;
+    persistent::version init_version = bst.get_version();
+    persistent::version last_version;
     for (int i = 0; i < size; i++)
     {
         auto dkey = i / (double)size;
